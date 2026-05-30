@@ -1,0 +1,12 @@
+{
+  "name": "blog-server",
+  "type": "module",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^4.22.1",
+    "mongoose": "^9.6.1"
+  }
+}
