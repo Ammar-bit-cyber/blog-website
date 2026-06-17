@@ -1,26 +1,32 @@
 import Header from './components/header'
 import Footer from './components/footer'
 import './App.css'
-
+import { useRef } from 'react'
+import { useGSAP } from '@gsap/react'
+import { animatePageContent } from './animations/gsapEffects'
 
 function Contact() {
-    return (
+  const mainRef = useRef(null)
 
-<> 
-        <Header />
-        
-        <main className="homeHero contactPage">
+  useGSAP(
+    () => {
+      if (mainRef.current) animatePageContent(mainRef.current)
+    },
+    { scope: mainRef }
+  )
 
-                <p className="subTitle">
+  return (
+    <>
+      <Header />
 
-                Please do not contact me at the moment; I am currently occupied.
-                </p>
-        </main>
-        <Footer />
-</>
-    )
-  }
-  
-  export default Contact
+      <main className="homeHero contactPage" ref={mainRef}>
+        <p className="subTitle">
+          Please do not contact me at the moment; I am currently occupied.
+        </p>
+      </main>
+      <Footer />
+    </>
+  )
+}
 
-
+export default Contact

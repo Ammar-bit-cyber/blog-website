@@ -1,8 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import Header from './components/header';
+import Footer from './components/footer';
 import { sortBlogsByLatest } from './utils/sortBlogs';
 import { API_BASE } from './api';
+import { checkAuth, login, logout, authHeaders, clearToken } from './auth';
+import { useGSAP } from '@gsap/react';
+import { animateAuthorSurface, animateAuthorCards, attachCardHover } from './animations/gsapEffects';
 const MIN_EXCERPT_LENGTH = 300;
 
 const slugify = (text) =>
@@ -16,10 +20,34 @@ const Author = () => {
   const [excerpt, setExcerpt] = useState('');
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authChecking, setAuthChecking] = useState(true);
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
 
   const isEditing = Boolean(editingId);
   const excerptLength = excerpt.length;
   const excerptValid = excerptLength >= MIN_EXCERPT_LENGTH;
+  const mainRef = useRef(null);
+
+  useGSAP(
+    () => {
+      if (!isAuthenticated || !mainRef.current) return;
+      animateAuthorSurface(mainRef.current);
+    },
+    { scope: mainRef, dependencies: [isAuthenticated] }
+  );
+
+  useGSAP(
+    () => {
+      if (!isAuthenticated || !mainRef.current || blogs.length === 0) return;
+      animateAuthorCards(mainRef.current);
+      const cards = mainRef.current.querySelectorAll('.authorCard');
+      return attachCardHover(cards);
+    },
+    { scope: mainRef, dependencies: [blogs.length] }
+  );
 
   const loadBlogs = () => {
     return fetch(`${API_BASE}/blogs`)
@@ -29,8 +57,42 @@ const Author = () => {
   };
 
   useEffect(() => {
-    loadBlogs();
+    checkAuth()
+      .then(setIsAuthenticated)
+      .finally(() => setAuthChecking(false));
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) loadBlogs();
+  }, [isAuthenticated]);
+
+  const handleUnauthorized = () => {
+    clearToken();
+    setIsAuthenticated(false);
+    alert('Session expired. Please sign in again.');
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+    setLoginLoading(true);
+    try {
+      await login(loginPassword);
+      setLoginPassword('');
+      setIsAuthenticated(true);
+    } catch (err) {
+      setLoginError(err.message || 'Invalid password');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    setIsAuthenticated(false);
+    resetForm();
+    setBlogs([]);
+  };
 
   const resetForm = () => {
     setTitle('');
@@ -68,9 +130,10 @@ const Author = () => {
     try {
       const res = await fetch(`${API_BASE}/add`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(buildPayload(true)),
       });
+      if (res.status === 401) return handleUnauthorized();
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message || 'Failed to publish');
@@ -94,9 +157,10 @@ const Author = () => {
     try {
       const res = await fetch(`${API_BASE}/blogs/${editingId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(buildPayload(false)),
       });
+      if (res.status === 401) return handleUnauthorized();
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message || 'Failed to update');
@@ -141,7 +205,11 @@ const Author = () => {
     if (!id) return alert('This blog cannot be deleted (missing id).');
 
     try {
-      const res = await fetch(`${API_BASE}/blogs/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE}/blogs/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+      if (res.status === 401) return handleUnauthorized();
       if (!res.ok) throw new Error('Failed');
       setBlogs((prev) => prev.filter((b) => getBlogId(b) !== id));
       if (editingId === id) resetForm();
@@ -151,10 +219,69 @@ const Author = () => {
     }
   };
 
+  if (authChecking) {
+    return (
+      <>
+        <Header />
+        <main className="authorPage">
+          <div className="container main">
+            <p className="authorEmpty">Checking access…</p>
+          </div>
+        </main>
+      </>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <>
+        <Header />
+        <main className="authorPage">
+          <div className="container main">
+            <section className="surface authorSurface authorLoginSurface">
+              <div className="surfaceInner">
+                <header className="authorHeader">
+                  <h1 className="pageTitle pageTitleColor authorTitle">Author Sign In</h1>
+                  <p className="subTitle authorSubTitle">
+                    Enter the author password to publish and manage blog posts.
+                  </p>
+                </header>
+                <form className="authorForm authorLoginForm" onSubmit={handleLogin}>
+                  <div className="authorField">
+                    <label className="authorLabel" htmlFor="authorPassword">Password</label>
+                    <input
+                      id="authorPassword"
+                      className="authorInput"
+                      type="password"
+                      placeholder="Author password"
+                      value={loginPassword}
+                      required
+                      autoComplete="current-password"
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                    />
+                  </div>
+                  {loginError && (
+                    <p className="authorLoginError" role="alert">{loginError}</p>
+                  )}
+                  <div className="authorActions">
+                    <button className="publishBtn" type="submit" disabled={loginLoading}>
+                      {loginLoading ? 'Signing in…' : 'Sign in'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </section>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
   return (
     <>
       <Header />
-      <main className="authorPage">
+      <main className="authorPage" ref={mainRef}>
       <div className="container main">
         <section className="surface authorSurface">
           <div className="surfaceInner">
@@ -165,6 +292,13 @@ const Author = () => {
                   ? 'You are editing a post. Click “New post” to publish a different one.'
                   : 'Draft a new post and publish it to the feed.'}
               </p>
+              <button
+                type="button"
+                className="authorLogoutBtn"
+                onClick={handleLogout}
+              >
+                Sign out
+              </button>
               {isEditing && (
                 <button
                   type="button"

@@ -4,6 +4,7 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import { blogs } from "./models/blogscheme.js";
+import { requireAuth, registerAuthRoutes } from "./auth.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const frontendDist = path.join(__dirname, "../App/dist");
@@ -23,7 +24,9 @@ const port = 3000
 app.use(express.json());
 app.use(cors());
 
-app.post('/add', async (req, res) => {
+registerAuthRoutes(app);
+
+app.post('/add', requireAuth, async (req, res) => {
   try {
     const newblog = await blogs.create(req.body);
     res.status(201).json(newblog);
@@ -42,7 +45,7 @@ app.get('/blogs', async (req, res) => {
   res.json(allblog);
 })
 
-app.put('/blogs/:id', async (req, res) => {
+app.put('/blogs/:id', requireAuth, async (req, res) => {
   try {
     const updated = await blogs.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!updated) {
@@ -55,7 +58,7 @@ app.put('/blogs/:id', async (req, res) => {
   }
 });
 
-app.delete('/blogs/:id', async (req, res) => {
+app.delete('/blogs/:id', requireAuth, async (req, res) => {
   try {
     const deleted = await blogs.findByIdAndDelete(req.params.id);
     if (!deleted) {

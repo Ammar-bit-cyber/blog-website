@@ -403,6 +403,40 @@
   background: var(--accent-bg);
 }
 
+.authorLogoutBtn {
+  margin-top: 14px;
+  padding: 10px 18px;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  color: var(--text);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.authorLogoutBtn:hover {
+  border-color: var(--border-strong);
+  color: var(--text-h);
+}
+
+.authorLoginSurface {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.authorLoginForm {
+  margin-top: 0;
+}
+
+.authorLoginError {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #b91c1c;
+}
+
 .authorActions {
   display: flex;
   flex-wrap: wrap;
@@ -490,7 +524,6 @@
 }
 
 .authorCard:hover {
-  transform: translateY(-4px);
   border-color: var(--border-strong);
   box-shadow: var(--shadow-float-hover);
 }
@@ -729,7 +762,6 @@
 }
 
 .postCard:hover {
-  transform: translateY(-4px);
   border-color: var(--border-strong);
   box-shadow: var(--shadow-float-hover);
 }

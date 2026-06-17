@@ -8,12 +8,14 @@ export default defineConfig({
     proxy: {
       '/blogs': 'http://localhost:3000',
       '/add': 'http://localhost:3000',
+      '/auth': 'http://localhost:3000',
     },
   },
   preview: {
     proxy: {
       '/blogs': 'http://localhost:3000',
       '/add': 'http://localhost:3000',
+      '/auth': 'http://localhost:3000',
     },
   },
 })

@@ -1,36 +1,53 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './App.css'
 import Header from './components/header'
 import Footer from './components/footer'
 import { Link } from 'react-router-dom'
 import { sortBlogsByLatest } from './utils/sortBlogs'
 import { API_BASE } from './api'
-
+import { useGSAP } from '@gsap/react'
+import { animateHomeHero, animatePostCards, attachCardHover } from './animations/gsapEffects'
 
 function App() {
-  const [blogs, setBlogs] = useState([]);
+  const [blogs, setBlogs] = useState([])
+  const mainRef = useRef(null)
 
-    useEffect(() => {
-      fetch(`${API_BASE}/blogs`, { method: 'GET' })
-      .then(response => response.json())
-      .then(data => {
+  useEffect(() => {
+    fetch(`${API_BASE}/blogs`, { method: 'GET' })
+      .then((response) => response.json())
+      .then((data) => {
         setBlogs(sortBlogsByLatest(data))
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('Error fetching blogs:', error)
       })
-    },[])
+  }, [])
 
- 
+  useGSAP(
+    () => {
+      if (!mainRef.current) return
+      animateHomeHero(mainRef.current)
+    },
+    { scope: mainRef }
+  )
+
+  useGSAP(
+    () => {
+      if (!mainRef.current || blogs.length === 0) return
+      animatePostCards(mainRef.current)
+      const cards = mainRef.current.querySelectorAll('.postGrid .postCard')
+      return attachCardHover(cards)
+    },
+    { scope: mainRef, dependencies: [blogs.length] }
+  )
 
   return (
     <>
       <Header />
 
-      <main className="homeHero">
+      <main className="homeHero" ref={mainRef}>
         <div className="container main">
           <div className="heroCard">
-            {/* <p className="badge">Latest</p> */}
             <h1 className="pageTitle pageTitleColor">Latest Blogs</h1>
             <p className="subTitle">
               Simple, clean, and ready for your own blog content.
@@ -42,9 +59,7 @@ function App() {
           </div>
 
           <section className="postGrid" aria-label="Blog posts">
-
-
- {blogs.map((blog) => (
+            {blogs.map((blog) => (
               <article key={blog._id || blog.slug} className="postCard postCardColor">
                 <h2 className="postTitle">{blog.title}</h2>
                 <p className="postExcerpt">{blog.excerpt}</p>
@@ -58,7 +73,7 @@ function App() {
         </div>
       </main>
 
-          <Footer />
+      <Footer />
     </>
   )
 }

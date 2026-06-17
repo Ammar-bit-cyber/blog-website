@@ -35,6 +35,22 @@ node main.js
 
 Open **http://localhost:3000** — home, `/about`, `/contact`, `/author`, `/blog/your-slug` all work.
 
+## Author password
+
+The `/author` page is protected. Default password: **`blogadmin`**
+
+To change it, set `AUTHOR_PASSWORD` before starting the server:
+
+```bash
+# Windows PowerShell
+$env:AUTHOR_PASSWORD="your-secure-password"
+node main.js
+```
+
+Or copy `Server/.env.example` to `Server/.env` and edit the value (load with a tool like `dotenv` if you add it, or use the env var above).
+
+Publishing, editing, and deleting posts requires a valid sign-in. Reading the public blog does not.
+
 Share the whole **Blog Website** folder. The recipient needs:
 
 - Node.js installed  
