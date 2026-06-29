@@ -5,13 +5,16 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { blogs } from "./models/blogscheme.js";
 import { requireAuth, registerAuthRoutes } from "./auth.js";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const frontendDist = path.join(__dirname, "../App/dist");
 
 
 try {
-  await mongoose.connect("mongodb://localhost:27017/Blogs");
+ await mongoose.connect(process.env.MONGODB_URI);
   console.log("Mongo connected");
 
 } catch (error) {
@@ -19,7 +22,7 @@ try {
 }
 
 const app = express()
-const port = 3000
+const port = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(cors());
