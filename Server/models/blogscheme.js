@@ -8,4 +8,4 @@ const blogSchema = new Schema({
   slug: String,
  
 });
-export const blogs = mongoose.model('ؤlogs', blogSchema, 'Blogs');
+export const blogs = mongoose.model('blogs', blogSchema, 'Blogs');
